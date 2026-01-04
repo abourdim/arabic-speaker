@@ -4,91 +4,171 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>تطبيق يتكلم العربية (بدون باك-إند)</title>
+
+  <!-- External stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Small, safe fallback styles in case styles.css is missing -->
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 24px; background: #0b1220; color:#e8eefc; }
-    .card { max-width: 900px; margin: 0 auto; background: #121a2b; border: 1px solid #22304d; border-radius: 16px; padding: 18px; }
-    h1 { margin: 0 0 10px; font-size: 22px; }
-    textarea, input, select, button {
-      width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid #2a3a5f;
-      padding: 12px; font-size: 16px; background: #0e1627; color: #e8eefc;
-    }
-    textarea { min-height: 120px; resize: vertical; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top: 12px; }
-    .btns { display:flex; gap:10px; flex-wrap: wrap; margin-top: 12px; }
-    button { cursor:pointer; }
-    button.primary { background: #2f66ff; border-color:#2f66ff; color:white; }
-    button.danger { background: #ff3b3b; border-color:#ff3b3b; color:white; }
-    .muted { color:#a9b7d6; font-size: 13px; line-height: 1.5; margin-top: 10px; }
-    .pill { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #2a3a5f; background:#0e1627; }
-    .status { margin-top: 10px; display:flex; gap:10px; flex-wrap: wrap; align-items:center; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    body { margin: 0; }
+    img { max-width: 100%; height: auto; }
+    label { display:block; margin-bottom: 6px; }
+    select, textarea, input, button { width: 100%; }
   </style>
 </head>
+
 <body>
-  <div class="card">
-    <h1>🗣️ تطبيق يتكلم العربية (كلّه داخل المتصفح)</h1>
+  <div class="app beginner-mode">
+    <div class="rows-container">
+      <!-- Header with logo -->
+      <header class="header">
+        <div class="title-block">
+          <img src="logo.svg" alt="Logo" class="site-logo animated-logo" />
+          <div>
+            <h1>🗣️ تطبيق يتكلم العربية</h1>
+            <div class="subtitle">كلّه داخل المتصفح — بدون باك-إند</div>
+          </div>
+        </div>
 
-    <label for="text">النص الذي تريد أن ينطقه التطبيق:</label>
-    <textarea id="text" placeholder="اكتب هنا...">مرحباً! أنا تطبيق يعمل بدون باك-إند وأتكلم العربية.</textarea>
+        <div class="chip" title="حالة التطبيق">
+          <span class="chip-dot"></span>
+          Ready
+        </div>
+      </header>
 
-    <div class="row">
-      <div>
-        <label for="voice">الصوت (Voice):</label>
-        <select id="voice"></select>
-      </div>
-      <div>
-        <label for="dialect">لغة/لهجة التعرّف على الكلام:</label>
-        <select id="dialect">
-          <option value="ar-SA">ar-SA (السعودية)</option>
-          <option value="ar-EG">ar-EG (مصر)</option>
-          <option value="ar-AE">ar-AE (الإمارات)</option>
-          <option value="ar-JO">ar-JO (الأردن)</option>
-          <option value="ar-LB">ar-LB (لبنان)</option>
-          <option value="ar-MA">ar-MA (المغرب)</option>
-          <option value="ar-DZ">ar-DZ (الجزائر)</option>
-          <option value="ar-TN">ar-TN (تونس)</option>
-          <option value="ar-IQ">ar-IQ (العراق)</option>
-          <option value="ar-KW">ar-KW (الكويت)</option>
-        </select>
+      <div class="tab-pages">
+        <section class="tab-page active">
+          <div class="row row-top">
+            <div class="col-left">
+              <div class="card">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title"><span class="icon">📝</span> النص</div>
+                    <div class="card-subtitle">اكتب النص أو استخدم الاستماع لإملائه</div>
+                  </div>
+                  <div class="status-pill connected">
+                    <span class="status-dot"></span>
+                    TTS: <span id="ttsStatus" class="mono">جاهز</span>
+                  </div>
+                </div>
+
+                <label for="text">النص الذي تريد أن ينطقه التطبيق:</label>
+                <textarea id="text" placeholder="اكتب هنا...">مرحباً! أنا تطبيق يعمل بدون باك-إند وأتكلم العربية.</textarea>
+
+                <div class="hint">
+                  <div class="hint-title">ملاحظة</div>
+                  <ol>
+                    <li>ميزة الاستماع تعمل غالباً في Chrome/Edge وتحتاج HTTPS أو localhost.</li>
+                    <li>الأصوات العربية المتاحة تختلف حسب نظام التشغيل والمتصفح.</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title"><span class="icon">🎚️</span> الإعدادات</div>
+                  <div class="status-pill">
+                    <span class="status-dot"></span>
+                    STT: <span id="sttStatus" class="mono">غير نشط</span>
+                  </div>
+                </div>
+
+                <div class="controls-grid">
+                  <div class="control-section">
+                    <div class="section-header">
+                      <div class="section-title"><span class="section-icon">🗣️</span> الصوت (Voice)</div>
+                      <div class="section-subtitle">اختر الصوت المتاح على جهازك</div>
+                    </div>
+                    <select id="voice"></select>
+                  </div>
+
+                  <div class="control-section">
+                    <div class="section-header">
+                      <div class="section-title"><span class="section-icon">🎙️</span> لهجة التعرّف على الكلام</div>
+                      <div class="section-subtitle">تؤثر على دقّة التحويل من كلام إلى نص</div>
+                    </div>
+                    <select id="dialect">
+                      <option value="ar-SA">ar-SA (السعودية)</option>
+                      <option value="ar-EG">ar-EG (مصر)</option>
+                      <option value="ar-AE">ar-AE (الإمارات)</option>
+                      <option value="ar-JO">ar-JO (الأردن)</option>
+                      <option value="ar-LB">ar-LB (لبنان)</option>
+                      <option value="ar-MA">ar-MA (المغرب)</option>
+                      <option value="ar-DZ">ar-DZ (الجزائر)</option>
+                      <option value="ar-TN">ar-TN (تونس)</option>
+                      <option value="ar-IQ">ar-IQ (العراق)</option>
+                      <option value="ar-KW">ar-KW (الكويت)</option>
+                    </select>
+                  </div>
+
+                  <div class="control-section">
+                    <div class="section-header">
+                      <div class="section-title"><span class="section-icon">⏩</span> السرعة (Rate): <span id="rateV" class="badge"><strong class="mono">1.0</strong></span></div>
+                      <div class="section-subtitle">0.6 بطيء — 1.4 سريع</div>
+                    </div>
+                    <input id="rate" type="range" min="0.6" max="1.4" value="1.0" step="0.1" />
+                  </div>
+
+                  <div class="control-section">
+                    <div class="section-header">
+                      <div class="section-title"><span class="section-icon">🎼</span> الحدّة (Pitch): <span id="pitchV" class="badge"><strong class="mono">1.0</strong></span></div>
+                      <div class="section-subtitle">0 منخفض — 2 مرتفع</div>
+                    </div>
+                    <input id="pitch" type="range" min="0" max="2" value="1.0" step="0.1" />
+                  </div>
+
+                  <div class="control-section">
+                    <div class="section-header">
+                      <div class="section-title"><span class="section-icon">🔊</span> الصوت (Volume): <span id="volV" class="badge"><strong class="mono">1.0</strong></span></div>
+                      <div class="section-subtitle">0 صامت — 1 كامل</div>
+                    </div>
+                    <input id="volume" type="range" min="0" max="1" value="1.0" step="0.05" />
+                  </div>
+                </div>
+
+                <div class="button-row" style="margin-top:10px;">
+                  <button id="speak" class="primary"><span class="btn-icon">▶️</span> انطق</button>
+                  <button id="stop" class="secondary"><span class="btn-icon">⏹️</span> إيقاف</button>
+                  <button id="listen" class="secondary"><span class="btn-icon">🎙️</span> استمع</button>
+                  <button id="clear" class="secondary small"><span class="btn-icon">🧹</span> مسح</button>
+                </div>
+
+                <div class="hint" style="margin-top:8px;">
+                  <div class="hint-title">نصيحة</div>
+                  <div>إذا لم يعمل الميكروفون: استخدم <span class="mono">localhost</span> أو <span class="mono">https</span>.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-right">
+              <div class="card log-card">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title"><span class="icon">📊</span> الحالة</div>
+                    <div class="card-subtitle">مؤشرات سريعة للتشغيل</div>
+                  </div>
+                  <span class="badge"><strong>Web Speech</strong> API</span>
+                </div>
+
+                <div class="log" id="miniLog" aria-live="polite">
+                  <div class="log-line info">• هذا التطبيق يعمل بالكامل داخل المتصفح.</div>
+                  <div class="log-line info">• اختر صوتاً مناسباً ثم اضغط "انطق".</div>
+                  <div class="log-line info">• اضغط "استمع" لإملاء الكلام إلى النص.</div>
+                </div>
+
+                <div class="log-footer">
+                  <span class="mono">TTS / STT</span>
+                  <span class="mono">v1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
-
-    <div class="row3">
-      <div>
-        <label for="rate">السرعة (Rate): <span id="rateV" class="pill mono">1.0</span></label>
-        <input id="rate" type="range" min="0.6" max="1.4" value="1.0" step="0.1" />
-      </div>
-      <div>
-        <label for="pitch">الحدّة (Pitch): <span id="pitchV" class="pill mono">1.0</span></label>
-        <input id="pitch" type="range" min="0" max="2" value="1.0" step="0.1" />
-      </div>
-      <div>
-        <label for="volume">الصوت (Volume): <span id="volV" class="pill mono">1.0</span></label>
-        <input id="volume" type="range" min="0" max="1" value="1.0" step="0.05" />
-      </div>
-    </div>
-
-    <div class="btns">
-      <button id="speak" class="primary">▶️ انطق</button>
-      <button id="stop" class="danger">⏹️ إيقاف</button>
-      <button id="listen">🎙️ استمع (تحويل كلامي إلى نص)</button>
-      <button id="clear">🧹 مسح النص</button>
-    </div>
-
-    <div class="status">
-      <span class="pill">TTS: <span id="ttsStatus" class="mono">جاهز</span></span>
-      <span class="pill">STT: <span id="sttStatus" class="mono">غير نشط</span></span>
-    </div>
-
-    <p class="muted">
-      ملاحظات سريعة:
-      <br>• ميزة الاستماع (الميكروفون) تعمل غالباً في Chrome/Edge وتحتاج HTTPS أو localhost.
-      <br>• الأصوات العربية المتاحة تختلف حسب نظام التشغيل والمتصفح.
-    </p>
   </div>
 
-<script>
+  <script>
 (() => {
   // ----- UI refs -----
   const $ = (id) => document.getElementById(id);
@@ -270,7 +350,6 @@
     textEl.focus();
   });
 })();
-</script>
+  </script>
 </body>
 </html>
-
