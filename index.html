@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تطبيق يتكلم العربية (بدون باك-إند)</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; background: #0b1220; color:#e8eefc; }
+    .card { max-width: 900px; margin: 0 auto; background: #121a2b; border: 1px solid #22304d; border-radius: 16px; padding: 18px; }
+    h1 { margin: 0 0 10px; font-size: 22px; }
+    textarea, input, select, button {
+      width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid #2a3a5f;
+      padding: 12px; font-size: 16px; background: #0e1627; color: #e8eefc;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top: 12px; }
+    .btns { display:flex; gap:10px; flex-wrap: wrap; margin-top: 12px; }
+    button { cursor:pointer; }
+    button.primary { background: #2f66ff; border-color:#2f66ff; color:white; }
+    button.danger { background: #ff3b3b; border-color:#ff3b3b; color:white; }
+    .muted { color:#a9b7d6; font-size: 13px; line-height: 1.5; margin-top: 10px; }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #2a3a5f; background:#0e1627; }
+    .status { margin-top: 10px; display:flex; gap:10px; flex-wrap: wrap; align-items:center; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🗣️ تطبيق يتكلم العربية (كلّه داخل المتصفح)</h1>
+
+    <label for="text">النص الذي تريد أن ينطقه التطبيق:</label>
+    <textarea id="text" placeholder="اكتب هنا...">مرحباً! أنا تطبيق يعمل بدون باك-إند وأتكلم العربية.</textarea>
+
+    <div class="row">
+      <div>
+        <label for="voice">الصوت (Voice):</label>
+        <select id="voice"></select>
+      </div>
+      <div>
+        <label for="dialect">لغة/لهجة التعرّف على الكلام:</label>
+        <select id="dialect">
+          <option value="ar-SA">ar-SA (السعودية)</option>
+          <option value="ar-EG">ar-EG (مصر)</option>
+          <option value="ar-AE">ar-AE (الإمارات)</option>
+          <option value="ar-JO">ar-JO (الأردن)</option>
+          <option value="ar-LB">ar-LB (لبنان)</option>
+          <option value="ar-MA">ar-MA (المغرب)</option>
+          <option value="ar-DZ">ar-DZ (الجزائر)</option>
+          <option value="ar-TN">ar-TN (تونس)</option>
+          <option value="ar-IQ">ar-IQ (العراق)</option>
+          <option value="ar-KW">ar-KW (الكويت)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row3">
+      <div>
+        <label for="rate">السرعة (Rate): <span id="rateV" class="pill mono">1.0</span></label>
+        <input id="rate" type="range" min="0.6" max="1.4" value="1.0" step="0.1" />
+      </div>
+      <div>
+        <label for="pitch">الحدّة (Pitch): <span id="pitchV" class="pill mono">1.0</span></label>
+        <input id="pitch" type="range" min="0" max="2" value="1.0" step="0.1" />
+      </div>
+      <div>
+        <label for="volume">الصوت (Volume): <span id="volV" class="pill mono">1.0</span></label>
+        <input id="volume" type="range" min="0" max="1" value="1.0" step="0.05" />
+      </div>
+    </div>
+
+    <div class="btns">
+      <button id="speak" class="primary">▶️ انطق</button>
+      <button id="stop" class="danger">⏹️ إيقاف</button>
+      <button id="listen">🎙️ استمع (تحويل كلامي إلى نص)</button>
+      <button id="clear">🧹 مسح النص</button>
+    </div>
+
+    <div class="status">
+      <span class="pill">TTS: <span id="ttsStatus" class="mono">جاهز</span></span>
+      <span class="pill">STT: <span id="sttStatus" class="mono">غير نشط</span></span>
+    </div>
+
+    <p class="muted">
+      ملاحظات سريعة:
+      <br>• ميزة الاستماع (الميكروفون) تعمل غالباً في Chrome/Edge وتحتاج HTTPS أو localhost.
+      <br>• الأصوات العربية المتاحة تختلف حسب نظام التشغيل والمتصفح.
+    </p>
+  </div>
+
+<script>
+(() => {
+  // ----- UI refs -----
+  const $ = (id) => document.getElementById(id);
+  const textEl = $("text");
+  const voiceEl = $("voice");
+  const dialectEl = $("dialect");
+  const speakBtn = $("speak");
+  const stopBtn = $("stop");
+  const listenBtn = $("listen");
+  const clearBtn = $("clear");
+  const ttsStatus = $("ttsStatus");
+  const sttStatus = $("sttStatus");
+
+  const rateEl = $("rate"), pitchEl = $("pitch"), volumeEl = $("volume");
+  const rateV = $("rateV"), pitchV = $("pitchV"), volV = $("volV");
+  const syncRanges = () => {
+    rateV.textContent = Number(rateEl.value).toFixed(1);
+    pitchV.textContent = Number(pitchEl.value).toFixed(1);
+    volV.textContent = Number(volumeEl.value).toFixed(2);
+  };
+  [rateEl, pitchEl, volumeEl].forEach(el => el.addEventListener("input", syncRanges));
+  syncRanges();
+
+  // ----- Speech Synthesis (TTS) -----
+  const hasTTS = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  let voices = [];
+
+  function populateVoices() {
+    if (!hasTTS) {
+      ttsStatus.textContent = "غير مدعوم";
+      voiceEl.innerHTML = `<option>المتصفح لا يدعم النطق</option>`;
+      voiceEl.disabled = true;
+      speakBtn.disabled = true;
+      stopBtn.disabled = true;
+      return;
+    }
+
+    voices = speechSynthesis.getVoices() || [];
+    // Prefer Arabic voices first
+    const arabic = voices.filter(v => (v.lang || "").toLowerCase().startsWith("ar"));
+    const others = voices.filter(v => !(v.lang || "").toLowerCase().startsWith("ar"));
+
+    const ordered = [...arabic, ...others];
+    voiceEl.innerHTML = ordered.map((v, idx) => {
+      const tag = (v.lang || "unknown");
+      return `<option value="${idx}">${v.name} — ${tag}</option>`;
+    }).join("");
+
+    // Auto-select first Arabic voice if available
+    if (arabic.length > 0) {
+      const firstArabicIndex = ordered.indexOf(arabic[0]);
+      voiceEl.value = String(firstArabicIndex);
+      ttsStatus.textContent = "جاهز (صوت عربي متوفر)";
+    } else {
+      ttsStatus.textContent = "جاهز (لا يوجد صوت عربي—سيُستخدم أقرب صوت متاح)";
+    }
+  }
+
+  // Some browsers load voices async
+  if (hasTTS) {
+    populateVoices();
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  function speakArabic() {
+    if (!hasTTS) return;
+    const text = (textEl.value || "").trim();
+    if (!text) return;
+
+    // Stop anything currently speaking
+    speechSynthesis.cancel();
+
+    const u = new SpeechSynthesisUtterance(text);
+    // Try to set Arabic; voice choice matters most.
+    u.lang = "ar";
+
+    const idx = Number(voiceEl.value);
+    const all = voices.length ? voices : speechSynthesis.getVoices();
+    if (all && all[idx]) u.voice = all[idx];
+
+    u.rate = Number(rateEl.value);
+    u.pitch = Number(pitchEl.value);
+    u.volume = Number(volumeEl.value);
+
+    u.onstart = () => (ttsStatus.textContent = "يتكلم الآن…");
+    u.onend = () => (ttsStatus.textContent = "جاهز");
+    u.onerror = () => (ttsStatus.textContent = "خطأ في النطق");
+
+    speechSynthesis.speak(u);
+  }
+
+  function stopSpeaking() {
+    if (!hasTTS) return;
+    speechSynthesis.cancel();
+    ttsStatus.textContent = "موقوف";
+    setTimeout(() => (ttsStatus.textContent = "جاهز"), 300);
+  }
+
+  speakBtn.addEventListener("click", speakArabic);
+  stopBtn.addEventListener("click", stopSpeaking);
+
+  // ----- Speech Recognition (STT) -----
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const hasSTT = !!SpeechRecognition;
+  let rec = null;
+  let listening = false;
+
+  function setupSTT() {
+    if (!hasSTT) {
+      listenBtn.disabled = true;
+      sttStatus.textContent = "غير مدعوم";
+      return;
+    }
+    rec = new SpeechRecognition();
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onstart = () => {
+      listening = true;
+      sttStatus.textContent = "يستمع…";
+      listenBtn.textContent = "🛑 إيقاف الاستماع";
+    };
+
+    rec.onend = () => {
+      listening = false;
+      sttStatus.textContent = "غير نشط";
+      listenBtn.textContent = "🎙️ استمع (تحويل كلامي إلى نص)";
+    };
+
+    rec.onerror = (e) => {
+      sttStatus.textContent = "خطأ: " + (e.error || "unknown");
+    };
+
+    rec.onresult = (event) => {
+      // Build final + interim
+      let finalText = "";
+      let interimText = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const res = event.results[i];
+        const transcript = res[0].transcript;
+        if (res.isFinal) finalText += transcript;
+        else interimText += transcript;
+      }
+
+      // Put results into the textarea
+      // If final text arrives, append it. Show interim at the end.
+      const base = textEl.dataset.baseText ?? textEl.value;
+      if (finalText) {
+        const newBase = (base + (base.trim() ? "\n" : "") + finalText).trim();
+        textEl.value = newBase;
+        textEl.dataset.baseText = newBase;
+      }
+      if (interimText) {
+        const stable = textEl.dataset.baseText ?? "";
+        textEl.value = stable + "\n" + interimText;
+      }
+    };
+  }
+
+  setupSTT();
+
+  function toggleListen() {
+    if (!hasSTT || !rec) return;
+    if (!listening) {
+      // reset base buffer
+      textEl.dataset.baseText = textEl.value.trim();
+      rec.lang = dialectEl.value;  // e.g., ar-SA
+      try { rec.start(); } catch (_) {}
+    } else {
+      rec.stop();
+    }
+  }
+
+  listenBtn.addEventListener("click", toggleListen);
+
+  clearBtn.addEventListener("click", () => {
+    textEl.value = "";
+    textEl.dataset.baseText = "";
+    textEl.focus();
+  });
+})();
+</script>
+</body>
+</html>
+
